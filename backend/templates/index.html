@@ -9,40 +9,44 @@
 <body>
   <main>
     <h1>{{ title }}</h1>
-    <p class="sub">{{ description }} · LLM <span class="pill">{{ llm_mode }}</span></p>
+    <p class="sub">Plan → approve → execute (dry-run by default). Every tool call is audited.</p>
     <div class="grid">
       <section class="card">
-        <h2>Create job</h2>
-        <form method="post" action="/ui/create">
-        <label>tool</label><input name="tool" placeholder="tool" required />
-<label>target</label><input name="target" placeholder="target" required />
-<label>payload</label><input name="payload" placeholder="payload" required />
-          <button type="submit">Save</button>
+        <h2>New ops job</h2>
+        <form method="post" action="/ui/jobs">
+          <label>Goal</label>
+          <textarea name="goal" rows="5" required placeholder="e.g. API gateway is flaky — inspect health/logs then restart if needed"></textarea>
+          <label><input type="checkbox" name="dry_run" checked /> Dry-run (recommended)</label>
+          <button type="submit">Plan with AI</button>
         </form>
-        <h2 style="margin-top:1.25rem">AI action: {{ action }}</h2>
-        <p class="sub">{{ action_desc }}</p>
-        <form method="post" action="/ui/action">
-          <label>prompt</label>
-          <textarea name="prompt" rows="4" placeholder="Describe what you need..."></textarea>
-          <button type="submit">Run {{ action }}</button>
-        </form>
-        {% if last_result %}
-        <h3>Last result</h3>
-        <pre>{{ last_result }}</pre>
-        {% endif %}
+        <h3>Registered tools</h3>
+        <ul>
+          {% for t in tools %}
+          <li><code>{{ t.name }}</code> — {{ t.description }} <span class="pill">{{ t.risk }}</span></li>
+          {% endfor %}
+        </ul>
       </section>
       <section class="card">
-        <h2>{{ resource }} ({{ items|length }})</h2>
+        <h2>Jobs</h2>
         <table>
-          <thead><tr><th>id</th><th>data</th></tr></thead>
+          <thead><tr><th>ID</th><th>Goal</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
-          {% for item in items %}
+          {% for j in jobs %}
             <tr>
-              <td>{{ item.id }}</td>
-              <td><code>{{ item }}</code></td>
+              <td><code>{{ j.id }}</code><div class="pill {% if j.risk=='high' %}bad{% elif j.risk=='medium' %}warn{% else %}ok{% endif %}">{{ j.risk }}</div></td>
+              <td>{{ j.goal }}{% if j.dry_run %} <span class="pill">dry-run</span>{% endif %}<pre>{{ j.plan_json }}</pre></td>
+              <td><span class="pill">{{ j.status }}</span></td>
+              <td class="row">
+                {% if j.status == 'pending_approval' %}
+                <form method="post" action="/ui/jobs/{{ j.id }}/approve"><button type="submit">Approve</button></form>
+                {% endif %}
+                {% if j.status in ['approved', 'succeeded', 'failed'] or j.status == 'approved' %}
+                <form method="post" action="/ui/jobs/{{ j.id }}/run"><button class="secondary" type="submit">Run</button></form>
+                {% endif %}
+              </td>
             </tr>
           {% else %}
-            <tr><td colspan="2">No items yet</td></tr>
+            <tr><td colspan="4">No jobs yet — create one on the left.</td></tr>
           {% endfor %}
           </tbody>
         </table>

@@ -1,0 +1,17 @@
+[project]
+name = "ops-tool-calling-agent"
+version = "2.0.0"
+description = "Production-shaped SRE co-pilot: LLM plans multi-step tool calls, humans approve, executions support dry-run, and every action is audited."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true

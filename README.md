@@ -1,34 +1,37 @@
 # Ops Tool-Calling Agent
 
-Full-stack ops agent with tool registry, audit trail, and a console UI for running multi-step infrastructure tasks.
+Production-shaped SRE co-pilot: LLM plans multi-step tool calls, humans approve, executions support dry-run, and every action is audited.
 
-## Stack
+![CI](https://img.shields.io/badge/CI-pytest%20%7C%20ruff%20%7C%20mypy-22c55e)
+![Python](https://img.shields.io/badge/python-3.11%2B-3b82f6)
+![License](https://img.shields.io/badge/license-MIT-informational)
 
-- **Backend:** FastAPI + Jinja UI (full-stack single service)
-- **LLM:** mock provider by default; optional OpenAI / Ollama via env
-- **Packaging:** Docker + docker-compose
-- **Tests:** pytest API smoke tests
+## Why this exists
 
-## Architecture
+Most "AI ops" demos jump straight from a prompt to a shell command. This project models how real teams actually work:
+**plan → human approval → dry-run → execute → audit**.
 
-```text
-Browser UI ──► FastAPI routes ──► domain store (JSON)
-                   │
-                   └──► llm.complete() (mock | openai | ollama)
-```
+## Features
 
-## Quick start (local)
+- Tool registry with risk labels (`low` / `medium` / `high`)
+- LLM planner (mock / OpenAI / Ollama) returning structured JSON plans
+- Approval gate + dry-run execution
+- Durable SQLite storage (Postgres-ready URL)
+- Request IDs, latency headers, structured logs
+- Operator UI + OpenAPI (`/docs`)
+- CI workflow, coverage-friendly tests, Docker healthchecks
+
+## Quick start
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\activate
-source .venv/bin/activate
-pip install -r requirements.txt
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt -r requirements-dev.txt
 cp .env.example .env
 uvicorn backend.main:app --reload --port 8000
 ```
 
-Open http://127.0.0.1:8000
+Open http://127.0.0.1:8000 — or API docs at `/docs`.
 
 ## Docker
 
@@ -36,19 +39,31 @@ Open http://127.0.0.1:8000
 docker compose up --build
 ```
 
-## API
-
-- `GET /health`
-- `GET /api/jobs`
-- `POST /api/jobs`
-- `POST /api/plan_tools` — Propose a safe multi-step tool plan for an ops goal
-
 ## Tests
 
 ```bash
-pytest -q
+pytest -q --cov=backend
 ```
 
-## Notes
+## Project layout
 
-Production-shaped learning app: real routes, UI, Docker, and tests. Swap `LLM_MODE=openai` or `ollama` when you have credentials/models.
+```text
+backend/
+  api/           # HTTP routers
+  llm/           # provider implementations
+  services/      # orchestration
+  tools/         # executable tool registry
+  templates/     # operator UI
+docs/            # architecture, API, deployment
+tests/           # unit + flow + perf smoke
+```
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [API](docs/api.md)
+- [Deployment](docs/deployment.md)
+
+## License
+
+MIT — see [LICENSE](LICENSE).
